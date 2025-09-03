@@ -1,0 +1,60 @@
+---
+title: "A1"
+author: "Kyle Bartlett"
+date: "2025-09-03"
+output: html_document
+---
+
+
+
+```{r}
+# 1. Load libraries
+# dplyr for data manipulation, ggplot2 for plotting
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+
+```{r}
+# 2. Import dataset
+# Display first few lines of data
+cereals <- read_csv("C:/Users/kyleb/OneDrive/Fall 2025/Fundamentals of Machine Learning/Cereals.csv")
+# View(cereals)
+head(cereals)
+```
+
+
+```{r}
+# 3. Descriptive statistics
+# Summary of quantitative variables
+summary(select(cereals, calories, protein, fat, sodium))
+# Frequency table for a categorical variable
+table(cereals$mfr)   # "mfr" = manufacturer code
+```
+
+
+```{r}
+# 4. Transform a variable
+# Create log of sodium to reduce skewness
+cereals <- cereals %>%
+  mutate(log_sodium = log(sodium + 1))
+```
+
+
+```{r}
+# 5. Plot a quantitative variable
+# Histogram of calories
+ggplot(cereals, aes(x = calories)) +
+  geom_histogram(binwidth = 10, fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Calories in Cereals", x = "Calories", y = "Count")
+```
+
+
+```{r}
+# 6. Scatter plot of two quantitative variables
+# Protein vs Calories
+ggplot(cereals, aes(x = calories, y = protein)) +
+  geom_point(color = "darkred") +
+  labs(title = "Protein vs Calories", x = "Calories", y = "Protein")
+```
