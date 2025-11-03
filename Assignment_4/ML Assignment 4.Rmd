@@ -1,0 +1,130 @@
+---
+title: "ML Assignment 4"
+author: "Kyle Bartlett"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(factoextra)
+library(ISLR)
+set.seed(123)
+```
+
+
+***Part A:***
+
+
+```{r}
+pharma <- read.csv("Pharmaceuticals.csv")
+```
+
+```{r}
+num_data <- pharma[, c("Market_Cap", "Beta", "PE_Ratio", "ROE", "ROA",
+                       "Asset_Turnover", "Leverage", "Rev_Growth", "Net_Profit_Margin")]
+
+num_data_scaled <- scale(num_data)
+
+fviz_nbclust(num_data_scaled, kmeans, method = "wss")
+
+kmeans_result <- kmeans(num_data_scaled, centers = 3, nstart = 20)
+pharma$Cluster <- kmeans_result$cluster
+fviz_cluster(kmeans_result, data = num_data)
+```
+
+Explanation:
+
+I only used numeric variables 1–9 to avoid mixing categories. I standardized the data so that all variables have equal weight. This is so variables like market cap thats in billions doesn't dominate small-scale metrics like leverage.I used the most common method of measure called Euclidean distance because it is well suited for data like this that is numerical. The elbow method is used to find the most appropriate value for k by finding the bend in the graph. For the pharmaceuticals data k=3 is the best based on the graph. Finally, k-means algorithm is used to group firms based on similarity across all metrics.
+
+
+***Part B:***
+
+
+```{r}
+cluster_summary <- aggregate(num_data, by = list(Cluster = pharma$Cluster), mean)
+print(cluster_summary)
+```
+
+Explanation:
+
+There are 3 distinct clusters on the graph that can give us insight into the numerical variables in the data. 
+
+Cluster 1: Small firms and high growth which are Emerging Pharmaceuticals
+
+Cluster 2: Large market cap and low leverage which are Established Giants
+
+Cluster 3: High PE ratio and moderate returns which are Growth Stocks
+
+
+***Part C:***
+
+
+Comparing clusters and Categorical variables:
+```{r}
+table(pharma$Cluster, pharma$Median_Recommendation)
+table(pharma$Cluster, pharma$Location)
+table(pharma$Cluster, pharma$Exchange)
+```
+
+
+Cluster vs Median Recommendation:
+
+
+Cluster 1: Mostly Moderate Buy and Moderate Sell ratings, shows mixed performance firms
+
+Cluster 2: Mostly Hold ratings stable, mature firms with little expected movement
+
+Cluster 3: One Strong Buy and One Moderate Buy with two Hold ratings shows positive analyst sentiment, possibly growth-oriented companies
+
+
+Cluster vs. Headquarter Location:
+
+
+Cluster 1: Mostly US-based with a few in France and Ireland indicating large, established global firms headquartered mainly in the US
+
+Cluster 2: Majority US and UK probably traditional, established pharma companies
+
+Cluster 3: A small mix of Canada, Germany, UK, and US, these are probably smaller international firms with varied origins
+
+
+Cluster vs. Stock Exchange:
+
+
+Cluster 1: Appears on multiple exchanges meaning more diverse listings, possibly global firms with broad exposure
+
+Cluster 2: All firms on NYSE which means well-established, traditional companies
+
+Cluster 3: All on NYSE, but smaller group so they are probably emerging or mid-sized firms
+
+
+***Part D:***
+
+
+```{r}
+pharma$Cluster_Name <- factor(pharma$Cluster,
+                              levels = c(1, 2, 3),
+                              labels = c("Emerging Pharmaceuticals",
+                                         "Established Giants",
+                                         "Growth Stocks"))
+
+head(pharma[, c("Name", "Cluster", "Cluster_Name")])
+```
+
+There are three clusters with appropriate names:
+
+Cluster 1: Emerging Pharmaceuticals
+
+Cluster 2: Established Giants
+
+Cluster 3: Growth Stocks
+
+
+
+
+
+
