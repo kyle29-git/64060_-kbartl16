@@ -1,0 +1,140 @@
+---
+title: "ML Assignment 5"
+author: "Kyle Bartlett"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(stats)
+library(cluster)
+
+```
+
+
+
+
+***1. Prep Data***
+
+
+```{r}
+cereals <-read.csv("C:/Users/kyleb/OneDrive/Fall 2025/Fundamentals of Machine Learning/A5/Cereals.csv")
+
+#View(Cereals)
+dim(cereals)
+head(cereals)
+str(cereals)
+```
+
+```{r}
+cereals_clean <- na.omit(cereals)
+nrow(cereals)
+nrow(cereals_clean)
+
+numeric_vars <- sapply(cereals_clean, is.numeric)
+numeric_data <- cereals_clean[, numeric_vars]
+print(names(numeric_data))
+```
+
+***2. Normalize Data***
+
+
+The data needs normalized to prevent features with larger scales from dominating the distance calculations therefore they should to be conssitant for clustering.
+```{r}
+scaled_data <- scale(numeric_data)
+#View(scaled_data)
+```
+
+
+***3. Hierarchical Clustering***
+
+
+```{r}
+methods <- c("single", "complete", "average", "ward")
+ac <- sapply(methods, function(m) agnes(scaled_data, method = m)$ac)
+ac
+
+
+best_method <- methods[which.max(ac)]
+best_method
+
+hc_ward <- agnes(scaled_data, method = "ward")
+
+pltree(hc_ward, cex = 0.6, hang = -1, main = "Ward Dendrogram of agnes")
+rect.hclust(hc_ward, k = 8, border = 1:8)
+
+```
+
+
+***4. Choosing Number of Clusters***
+
+
+```{r}
+best_ag <- agnes(scaled_data, method = best_method, metric = "euclidean")
+hcl <- as.hclust(best_ag)
+
+
+silhouette <- sapply(2:8, function(k) mean(silhouette(cutree(hcl, k), dist(scaled_data))[,3]))
+plot(2:8, silhouette, type = "b")
+k <- which.max(silhouette) + 1
+k
+
+clusters <- cutree(hcl, k)
+table(clusters)
+```
+
+
+***5. Stability Check***
+
+
+```{r}
+set.seed(123)
+train_idx <- sample(1:nrow(scaled_data), 0.7*nrow(scaled_data))
+A <- scaled_data[train_idx,]
+B <- scaled_data[-train_idx,]
+
+
+ag_A <- agnes(A, method = best_method, metric = "euclidean")
+hA <- as.hclust(ag_A)
+clA <- cutree(hA, k)
+
+
+centers <- aggregate(A, list(clA), mean)[,-1]
+
+
+assignB <- apply(B, 1, function(x) which.min(colSums((t(centers) - x)^2)))
+cl_all <- cutree(hcl, k)
+
+
+ARI <- mclust::adjustedRandIndex(assignB, cl_all[-train_idx])
+ARI
+```
+The stability check produced an Adjusted Rand Index (ARI) of 0.3197, which indicates low to moderate agreement between the clusters formed from training partition A and the assignments applied to testing partition B.
+
+
+
+***6. Public School Clusters***
+
+
+For this problem the data should not be normalized because for finding the healthy cereals cluster their absolute scale carries real meaning for health.
+```{r}
+name_col <- "name"
+
+centroids <- aggregate(numeric_data, list(cluster = clusters), mean)
+centroids
+
+
+# Choose the clusters with lowest sugars and calories as well as the highest fiber & protein
+healthy_cluster <- which.max(scale(-centroids$sugars) + scale(-centroids$calories) +
+scale(centroids$fiber) + scale(centroids$protein))
+healthy_cluster
+
+
+healthy_list <- cereals_clean[clusters == healthy_cluster, name_col]
+healthy_list
+```
